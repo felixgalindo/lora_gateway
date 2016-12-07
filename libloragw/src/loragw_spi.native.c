@@ -48,6 +48,8 @@ Maintainer: Sylvain Miermont
     #define CHECK_NULL(a)                if(a==NULL){return LGW_SPI_ERROR;}
 #endif
 
+#define SPI_DELAY                           (8)
+
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE CONSTANTS ---------------------------------------------------- */
 
@@ -197,6 +199,8 @@ int lgw_spi_w(void *spi_target, uint8_t spi_mux_mode, uint8_t spi_mux_target, ui
     k.bits_per_word = 8;
     a = ioctl(spi_device, SPI_IOC_MESSAGE(1), &k);
 
+    usleep(SPI_DELAY);
+
     /* determine return code */
     if (a != (int)k.len) {
         DEBUG_MSG("ERROR: SPI WRITE FAILURE\n");
@@ -246,6 +250,8 @@ int lgw_spi_r(void *spi_target, uint8_t spi_mux_mode, uint8_t spi_mux_target, ui
     k.len = command_size;
     k.cs_change = 0;
     a = ioctl(spi_device, SPI_IOC_MESSAGE(1), &k);
+
+    usleep(SPI_DELAY);
 
     /* determine return code */
     if (a != (int)k.len) {
@@ -310,6 +316,8 @@ int lgw_spi_wb(void *spi_target, uint8_t spi_mux_mode, uint8_t spi_mux_target, u
         size_to_do -= chunk_size; /* subtract the quantity of data already transferred */
     }
 
+    usleep(SPI_DELAY);
+
     /* determine return code */
     if (byte_transfered != size) {
         DEBUG_MSG("ERROR: SPI BURST WRITE FAILURE\n");
@@ -371,6 +379,8 @@ int lgw_spi_rb(void *spi_target, uint8_t spi_mux_mode, uint8_t spi_mux_target, u
         DEBUG_PRINTF("BURST READ: to trans %d # chunk %d # transferred %d \n", size_to_do, chunk_size, byte_transfered);
         size_to_do -= chunk_size;  /* subtract the quantity of data already transferred */
     }
+
+    usleep(SPI_DELAY);
 
     /* determine return code */
     if (byte_transfered != size) {
