@@ -36,12 +36,13 @@ Maintainer: Sylvain Miermont
 
 #include "parson.h"
 #include "loragw_hal.h"
+#include "loragw_reg.h"
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
 
 #define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
-#define MSG(args...)    fprintf(stderr,"loragw_pkt_logger: " args) /* message that is destined to the user */
+#define MSG(args...)    fprintf(stdout,"loragw_pkt_logger: " args) /* message that is destined to the user */
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE VARIABLES (GLOBAL) ------------------------------------------- */
@@ -342,9 +343,9 @@ int parse_gateway_configuration(const char * conf_file) {
 
 void open_log(void) {
     int i;
-    char iso_date[20];
+    char iso_date[30];
 
-    strftime(iso_date,ARRAY_SIZE(iso_date),"%Y%m%dT%H%M%SZ",gmtime(&now_time)); /* format yyyymmddThhmmssZ */
+    strftime(iso_date,ARRAY_SIZE(iso_date),"%Y%m%d_%H_%M_%S",gmtime(&now_time)); /* format yyyymmddThhmmssZ */
     log_start_time = now_time; /* keep track of when the log was started, for log rotation */
 
     sprintf(log_file_name, "pktlog_%s_%s.csv", lgwm_str, iso_date);
@@ -375,10 +376,103 @@ void usage(void) {
 /* -------------------------------------------------------------------------- */
 /* --- MAIN FUNCTION -------------------------------------------------------- */
 
+uint8_t lw_get_sf(uint8_t sf)
+{
+    int i;
+    for(i=7; i<=12; i++){
+        if(sf == (1<<(i-6))){
+            sf = i;
+            break;
+        }
+    }
+    return sf;
+}
+
+uint16_t lw_get_bw(uint8_t bw)
+{
+    uint16_t bwreal = bw;
+    switch (bw) {
+    case BW_125KHZ: bwreal = 125; break;
+    case BW_250KHZ: bwreal = 250; break;
+    case BW_500KHZ: bwreal = 500; break;
+    }
+    return bwreal;
+}
+
+void log_pkt(struct lgw_pkt_rx_s *rxpkt)
+{
+    int i;
+    struct timespec fetch_time;
+    struct tm * x;
+
+    if(rxpkt->status != STAT_CRC_OK){
+        return;
+    }
+
+    for(i=0; i<rxpkt->size; i++){
+        printf("%02X ", rxpkt->payload[i]);
+    }
+    printf("\n");
+
+    clock_gettime(CLOCK_REALTIME, &fetch_time);
+    x = gmtime(&(fetch_time.tv_sec));
+
+    if(rxpkt->modulation == MOD_LORA){
+        printf("%04i-%02i-%02i %02i:%02i:%02i LORA,%08X(%u),%d,%d,SF%dBW%d,4/%d,%.1f,%.1f,%.1f,%.1f\n",
+                        (x->tm_year)+1900,
+                        (x->tm_mon)+1,
+                        x->tm_mday,
+                        x->tm_hour,
+                        x->tm_min,
+                        x->tm_sec,
+                        rxpkt->count_us,
+                        rxpkt->count_us,
+                        rxpkt->if_chain,
+                        rxpkt->freq_hz,
+                        lw_get_sf(rxpkt->datarate),
+                        lw_get_bw(rxpkt->bandwidth),
+                        rxpkt->coderate+4,
+                        rxpkt->rssi,
+                        rxpkt->snr,
+                        rxpkt->snr_max,
+                        rxpkt->snr_min
+                 );
+    }else if(rxpkt->modulation == MOD_FSK){
+        printf("FSK,%08X(%u),%d,%d,%d,%d,%.1f\n",
+                        rxpkt->count_us,
+                        rxpkt->count_us,
+                        rxpkt->if_chain,
+                        rxpkt->freq_hz,
+                        rxpkt->datarate,
+                        rxpkt->bandwidth,
+                        rxpkt->rssi
+                 );
+    }
+
+    fflush(stdout);
+    fflush(stderr);
+}
+
+int lgw_check(void)
+{
+    int32_t tmp;
+    lgw_reg_r(LGW_RADIO_A_EN, &tmp);
+    if(tmp != 1){
+       return -1;
+    }
+
+    lgw_reg_r(LGW_RADIO_B_EN, &tmp);
+    if(tmp != 1){
+       return -1;
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int i, j; /* loop and temporary variables */
-    struct timespec sleep_time = {0, 3000000}; /* 3 ms */
+    struct timespec sleep_time = {4, 3000000}; /* 3 ms */
 
     /* clock and log rotation management */
     int log_rotate_interval = 3600; /* by default, rotation every hour */
@@ -391,7 +485,7 @@ int main(int argc, char **argv)
     const char debug_conf_fname[] = "debug_conf.json"; /* if present, all other configuration files are ignored */
 
     /* allocate memory for packet fetching and processing */
-    struct lgw_pkt_rx_s rxpkt[16]; /* array containing up to 16 inbound packets metadata */
+    struct lgw_pkt_rx_s rxpkt[LGW_PKT_FIFO_SIZE]; /* array containing up to 16 inbound packets metadata */
     struct lgw_pkt_rx_s *p; /* pointer on a RX packet */
     int nb_pkt;
 
@@ -477,6 +571,10 @@ int main(int argc, char **argv)
     while ((quit_sig != 1) && (exit_sig != 1)) {
         /* fetch packets */
         nb_pkt = lgw_receive(ARRAY_SIZE(rxpkt), rxpkt);
+        MSG("lgw rx %d\n", nb_pkt);
+        if(lgw_check() == 0){
+            MSG("Radio OK\n");
+        }
         if (nb_pkt == LGW_HAL_ERROR) {
             MSG("ERROR: failed packet fetch, exiting\n");
             return EXIT_FAILURE;
@@ -591,6 +689,8 @@ int main(int argc, char **argv)
             fputs("\"\n", log_file);
             fflush(log_file);
             ++pkt_in_log;
+
+            log_pkt(p);
         }
 
         /* check time and rotate log file if necessary */

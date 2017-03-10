@@ -1,0 +1,47 @@
+	 / _____)             _              | |    
+	( (____  _____ ____ _| |_ _____  ____| |__  
+	 \____ \| ___ |    (_   _) ___ |/ ___)  _ \ 
+	 _____) ) ____| | | || |_| ____( (___| | | |
+	(______/|_____)_|_|_| \__)_____)\____)_| |_|
+		©2013 Semtech-Cycleo
+
+Lora Gateway RSSI histogram
+===========================
+
+1. Introduction
+----------------
+
+This software captures and computes the histogram of RSSIs on multiple channels.
+
+2. Dependencies
+----------------
+
+loragw_reg
+loragw_aux
+
+3. Usage
+---------
+
+The histogram is computed over the following RSSI values: -137:1:-10 dBm
+the RSSI comes from the output of the 125 kHz-wide channel 1
+and is captured with the internal debug RAM of the concentrator which can record a maximum of 4096 points.
+By default, on each channel, RSSI is captured over 3 seconds, which is done by doing 90 successive RAM captures,
+the capture rate being set to 125kHz. This is repeated for channels from 863 to 870 MHz, by steps of 50 kHz.
+The histogram is logged into a csv file (by default, "rssi_histogram.csv"), and the format is :
+channel 1 frequency (MHz), RSSI value 1 (dBm), number of captured RSSI with value 1, RSSI val 2, hist of val 2, ..., RSSI val 128, hist ot val 128
+channel 2 frequency (MHz), RSSI value 1 (dBm), number of captured RSSI with value 1, RSSI val 2, hist of val 2, ..., RSSI val 128, hist ot val 128
+...
+
+Command-line options:
+ -h: help
+ --file: log file name, default is "rssi_histogram.csv"
+ --fmin: start frequency in Hz, default is 863 MHz
+ --fmax: stop frequency in Hz, default is 870 MHz
+ --fstep: frequency resolution in Hz, default is 50 kHz
+ -n: number of RSSI captures, each capture is 4096 samples long, default is 90 (3s for 125kHz capture rate)
+ -p: div ratio of capture rate (32 MHz/p), default is 256 (125 kHz)
+
+4. Changelog
+-------------
+
+2014-07-09	v1.0	Initial version

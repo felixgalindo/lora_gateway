@@ -63,44 +63,19 @@ struct sigaction sigact; /* SIGQUIT&SIGINT&SIGTERM signal handling */
 static int exit_sig = 0; /* 1 -> application terminates cleanly (shut down hardware, close open files, etc) */
 static int quit_sig = 0; /* 1 -> application terminates without shutting down the hardware */
 
+// ./util_tx_continuous --dig 3 --pa 3 --mix 10 --mod LORA -f 868
+
 /* TX gain LUT table */
 static struct lgw_tx_gain_lut_s txgain_lut = {
-    .size = 5,
+    .size = 1,
     .lut[0] = {
-        .dig_gain = 0,
-        .pa_gain = 0,
-        .dac_gain = 3,
-        .mix_gain = 12,
-        .rf_power = 0
-    },
-    .lut[1] = {
-        .dig_gain = 0,
-        .pa_gain = 1,
-        .dac_gain = 3,
-        .mix_gain = 12,
-        .rf_power = 10
-    },
-    .lut[2] = {
-        .dig_gain = 0,
-        .pa_gain = 2,
+        .dig_gain = 3,
+        .pa_gain = 3,
         .dac_gain = 3,
         .mix_gain = 10,
         .rf_power = 14
     },
-    .lut[3] = {
-        .dig_gain = 0,
-        .pa_gain = 3,
-        .dac_gain = 3,
-        .mix_gain = 9,
-        .rf_power = 20
-    },
-    .lut[4] = {
-        .dig_gain = 0,
-        .pa_gain = 3,
-        .dac_gain = 3,
-        .mix_gain = 14,
-        .rf_power = 27
-    }};
+};
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE FUNCTIONS DECLARATION ---------------------------------------- */
@@ -172,13 +147,13 @@ int main(int argc, char **argv)
     /* application parameters */
     char mod[64] = DEFAULT_MODULATION;
     uint32_t f_target = 0; /* target frequency - invalid default value, has to be specified by user */
-    int sf = 10; /* SF10 by default */
+    int sf = 7; /* SF10 by default */
     int cr = 1; /* CR1 aka 4/5 by default */
     int bw = 125; /* 125kHz bandwidth by default */
     int pow = 14; /* 14 dBm by default */
     int preamb = 8; /* 8 symbol preamble by default */
     int pl_size = 16; /* 16 bytes payload by default */
-    int delay = 1000; /* 1 second between packets by default */
+    int delay = 15000; /* 1 second between packets by default */
     int repeat = -1; /* by default, repeat until stopped */
     bool invert = false;
     float br_kbps = DEFAULT_BR_KBPS;

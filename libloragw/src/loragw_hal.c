@@ -716,7 +716,7 @@ int lgw_start(void) {
 
     /* gives AGC control of GPIOs to enable Tx external digital filter */
     lgw_reg_w(LGW_GPIO_MODE,31); /* Set all GPIOs as output */
-    lgw_reg_w(LGW_GPIO_SELECT_OUTPUT,2);
+    lgw_reg_w(LGW_GPIO_SELECT_OUTPUT,0);
 
     /* Configure LBT */
     if (lbt_is_enabled() == true) {
@@ -1105,7 +1105,12 @@ int lgw_receive(uint8_t max_pkt, struct lgw_pkt_rx_s *pkt_data) {
         p = &pkt_data[nb_pkt_fetch];
 
         /* fetch all the RX FIFO data */
-        lgw_reg_rb(LGW_RX_PACKET_DATA_FIFO_NUM_STORED, buff, 5);
+        if( LGW_REG_SUCCESS != lgw_reg_rb(LGW_RX_PACKET_DATA_FIFO_NUM_STORED, buff, 5) ){
+            //DEBUG_PRINTF("lgw_reg_rb error %x %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3], buff[4]);
+        }
+
+        //DEBUG_PRINTF("lgw_reg_rb status %02x %02x %02x %02x %02x\n", buff[0], buff[1], buff[2], buff[3], buff[4]);
+
         /* 0:   number of packets available in RX data buffer */
         /* 1,2: start address of the current packet in RX data buffer */
         /* 3:   CRC status of the current packet */
@@ -1122,7 +1127,7 @@ int lgw_receive(uint8_t max_pkt, struct lgw_pkt_rx_s *pkt_data) {
             break;
         }
 
-        DEBUG_PRINTF("FIFO content: %x %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3], buff[4]);
+        //DEBUG_PRINTF("FIFO content: %x %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3], buff[4]);
 
         p->size = buff[4];
         sz = p->size;

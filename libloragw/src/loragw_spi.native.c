@@ -21,6 +21,8 @@ Maintainer: Sylvain Miermont
 /* -------------------------------------------------------------------------- */
 /* --- DEPENDANCIES --------------------------------------------------------- */
 
+#define _BSD_SOURCE
+
 #include <stdint.h>        /* C99 types */
 #include <stdio.h>        /* printf fprintf */
 #include <stdlib.h>        /* malloc free */

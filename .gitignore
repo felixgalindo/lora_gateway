@@ -15,4 +15,5 @@ util_spectral_scan/util_spectral_scan
 util_spi_stress/util_spi_stress
 util_tx_continuous/util_tx_continuous
 util_tx_test/util_tx_test
+util_rx_test/util_rx_test
 util_dp_test/util_dp_test
