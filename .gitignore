@@ -17,3 +17,4 @@ util_tx_continuous/util_tx_continuous
 util_tx_test/util_tx_test
 util_rx_test/util_rx_test
 util_dp_test/util_dp_test
+util_rssi_histogram/util_rssi_histogram
